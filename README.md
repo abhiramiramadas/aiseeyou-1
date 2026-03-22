@@ -200,3 +200,6 @@ git pull origin main
 ✅ **Smart Weather-Based Accident Risk Adjustment** – Dynamically adjust accident severity scores based on **weather conditions like fog, rain, and visibility levels**.  
 ✅ **Mobile App Integration** – Develop a companion **mobile app** to allow users to receive **real-time accident notifications and insurance updates**.  
 
+#   a i s e e y o u  
+ #   a i s e e y o u  
+ 

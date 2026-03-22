@@ -1,387 +1,241 @@
-import cv2
-import torch
-import time
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from email.mime.image import MIMEImage
-from ultralytics import YOLO
-import requests
-from math import radians, sin, cos, sqrt, atan2
-from flask import Flask, request
+
+# ==========================================================
+# 🚗 AI Accident Detection System - Main Entry Point
+# ==========================================================
+
 import os
-from PIL import Image
-import io
-import psutil
-import random
-import threading
-from datetime import datetime
+import sys
+import argparse
 
-app = Flask(__name__)
-
-def select_yolo_model():
-    total_memory = psutil.virtual_memory().total
-
-    if total_memory < 4 * 1024 * 1024 * 1024:
-        print("Low memory detected. Selecting YOLOv11n model.")
-        return YOLO('yolo11n.pt')
-    elif total_memory < 8 * 1024 * 1024 * 1024:
-        print("Moderate memory detected. Selecting YOLOv11s model.")
-        return YOLO('yolo11s.pt')
-    else:
-        print("High memory detected. Selecting YOLOv11m model.")
-        return YOLO('yolo11m.pt')
-
-model = select_yolo_model()
-
-SCALE_FACTOR = 0.01
-SPEED_THRESHOLD = 5.0
-PROLONGED_COLLISION_FRAMES = 40
-MIN_COLLISION_DISTANCE = 50
-COLLISION_THRESHOLD = 120
-ACCIDENT_LOCATION = (19.070, 72.877)
-
-SENDER_EMAIL = "pranavreddy772003@gmail.com"
-RECEIVER_EMAIL = "772003pranav@gmail.com"
-PASSWORD = "lmip lcuw hmmc soeu"
-
-WEATHER_API_KEY = "7e33ee11182cc2ad20643f007c8b4834"
-WEATHER_URL = "https://api.openweathermap.org/data/2.5/weather"
-
-def get_vehicle_data():
-    speed = random.randint(0, 120)
-    acceleration = random.uniform(0, 5)
-    braking = random.choice([True, False])
-    return speed, acceleration, braking
-
-def detect_vehicle_events(speed, acceleration, braking):
-    events = []
-    if speed > 100:
-        events.append("Overspeeding")
-    if acceleration > 3:
-        events.append("Heavy acceleration")
-    if braking:
-        events.append("Hard braking")
-    return events
-
-def resize_image(image_path, max_size=(800, 600)):
-    with Image.open(image_path) as img:
-        img.thumbnail(max_size)
-        img_byte_arr = io.BytesIO()
-        img.save(img_byte_arr, format='JPEG')
-        return img_byte_arr.getvalue()
-
-def haversine(lat1, lon1, lat2, lon2):
-    R = 6371.0
-    lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
-    dlon = lon2 - lon1
-    dlat = lat2 - lat1
-    a = sin(dlat / 2)**2 + cos(lat1) * cos(lat2) * sin(dlon / 2)**2
-    c = 2 * atan2(sqrt(a), sqrt(1 - a))
-    distance = R * c
-    return distance
-
-def calculate_iou(box1, box2):
-    x1 = max(box1[0], box2[0])
-    y1 = max(box1[1], box2[1])
-    x2 = min(box1[2], box2[2])
-    y2 = min(box1[3], box2[3])
-
-    inter_area = max(0, x2 - x1) * max(0, y2 - y1)
-    box1_area = (box1[2] - box1[0]) * (box1[3] - box1[1])
-    box2_area = (box2[2] - box2[0]) * (box2[3] - box1[1])
-
-    union_area = box1_area + box2_area - inter_area
-    return inter_area / union_area if union_area > 0 else 0
-
-def calculate_speed(box1, box2, time_interval):
-    x1, y1 = (box1[0] + box1[2]) / 2, (box1[1] + box1[3]) / 2
-    x2, y2 = (box2[0] + box2[2]) / 2, (box2[1] + box2[3]) / 2
-    distance = sqrt((x2 - x1)**2 + (y2 - y1)**2)
-    return distance / time_interval
-
-def alert_nearest_services(location):
-    lat, lon = location
-    overpass_url = "http://overpass-api.de/api/interpreter"
-    overpass_query = f"""
-    [out:json];
-    (
-      node["amenity"="police"](around:5000,{lat},{lon});
-      node["amenity"="hospital"](around:5000,{lat},{lon});
-    );
-    out body;
-    """
-    response = requests.get(overpass_url, params={'data': overpass_query})
-    data = response.json()
-
-    police_stations = []
-    hospitals = []
-
-    for element in data['elements']:
-        if 'tags' in element:
-            name = element['tags'].get('name', 'Unnamed')
-            lat_osm, lon_osm = element['lat'], element['lon']
-            if element['tags'].get('amenity') == 'police':
-                police_stations.append({'name': name, 'lat': lat_osm, 'lon': lon_osm})
-            elif element['tags'].get('amenity') == 'hospital':
-                hospitals.append({'name': name, 'lat': lat_osm, 'lon': lon_osm})
-
-    nearest_police_station = min(police_stations, key=lambda p: haversine(lat, lon, p['lat'], p['lon']), default=None)
-    nearest_hospital = min(hospitals, key=lambda h: haversine(lat, lon, h['lat'], h['lon']), default=None)
-
-    return nearest_police_station, nearest_hospital
-
-def generate_accident_report(collision_count, max_speed, weather_condition, temperature, vehicle_events, 
-                             nearest_police_station, nearest_hospital):
-    report = f"""
-Accident Detection System - Detailed Report
-============================================
-
-Incident Details:
------------------
-Date and Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-Location: Latitude {ACCIDENT_LOCATION[0]}, Longitude {ACCIDENT_LOCATION[1]}
-
-Collision Metrics:
------------------
-Total Collision Count: {collision_count}
-Maximum Detected Speed: {max_speed:.2f} px/s
-
-Weather Conditions:
-------------------
-Description: {weather_condition}
-Temperature: {temperature:.1f}°C
-
-Vehicle Events:
---------------
-Detected Events: {', '.join(vehicle_events) if vehicle_events else 'No significant events'}
-
-Nearest Emergency Services:
---------------------------
-Police Station: {nearest_police_station['name'] if nearest_police_station else 'Not available'}
-Police Station Distance: {haversine(ACCIDENT_LOCATION[0], ACCIDENT_LOCATION[1], 
-                                     nearest_police_station['lat'], nearest_police_station['lon']) if nearest_police_station else 'N/A'} km
-Hospital: {nearest_hospital['name'] if nearest_hospital else 'Not available'}
-Hospital Distance: {haversine(ACCIDENT_LOCATION[0], ACCIDENT_LOCATION[1], 
-                               nearest_hospital['lat'], nearest_hospital['lon']) if nearest_hospital else 'N/A'} km
-
-Severity Assessment:
--------------------
-{estimate_severity(collision_count, max_speed, weather_condition)}
-
-Emergency Response Recommendation:
-----------------------------------
-Immediate medical and law enforcement assistance is strongly recommended. 
-Please verify the exact location and proceed with caution.
-
-Note: This is an automated system-generated report. Always confirm details with on-site assessment.
-"""
-    return report
-
-def send_email(subject, report, images, video=None):
-    msg = MIMEMultipart()
-    msg['From'] = SENDER_EMAIL
-    msg['To'] = RECEIVER_EMAIL
-    msg['Subject'] = subject
-
-    msg.attach(MIMEText(report, 'plain'))
-
-    for image in images[:min(3, len(images))]:
-        img_data = resize_image(image)
-        img_name = os.path.basename(image)
-        img = MIMEImage(img_data, name=img_name)
-        msg.attach(img)
-
-    if video:
-        video_name = os.path.basename(video)
-        with open(video, 'rb') as f:
-            video_data = f.read()
-        video_attachment = MIMEText(video_data, 'base64', 'utf-8')
-        video_attachment.add_header('Content-Disposition', 'attachment', filename=video_name)
-        msg.attach(video_attachment)
-
+def main():
+    """Main entry point for the accident detection system"""
+    
+    print("""
+╔══════════════════════════════════════════════════════════════════╗
+║                                                                  ║
+║   🚗 AI-Based Real-Time Accident Detection System 🚨             ║
+║   ──────────────────────────────────────────────────────────     ║
+║                                                                  ║
+║   Features:                                                      ║
+║   ✅ Real-Time Collision Detection (YOLO)                        ║
+║   ✅ Severity Estimation (IoU + Speed + Vehicle Type)            ║
+║   ✅ Weather Integration (OpenWeatherMap API)                    ║
+║   ✅ Emergency Services Locator (OpenStreetMap)                  ║
+║   ✅ Automated Email/SMS Alerts                                  ║
+║   ✅ Insurance Claim Automation                                  ║
+║   ✅ Flask REST API                                              ║
+║                                                                  ║
+╚══════════════════════════════════════════════════════════════════╝
+    """)
+    
+    parser = argparse.ArgumentParser(
+        description="AI-Based Real-Time Accident Detection System",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python main.py --api                    Start Flask API server
+  python main.py --video test.mp4         Process a video file
+  python main.py --camera 0               Use webcam for live detection
+  python main.py --gui                    Launch GUI application
+  python main.py --test                   Run system tests
+        """
+    )
+    
+    parser.add_argument('--api', action='store_true',
+                        help='Start Flask API server')
+    parser.add_argument('--video', type=str,
+                        help='Path to video file for processing')
+    parser.add_argument('--camera', type=int, default=None,
+                        help='Camera index for live detection')
+    parser.add_argument('--gui', action='store_true',
+                        help='Launch GUI application')
+    parser.add_argument('--test', action='store_true',
+                        help='Run system tests')
+    parser.add_argument('--debug', action='store_true',
+                        help='Enable debug mode')
+    parser.add_argument('--port', type=int, default=5000,
+                        help='Port for Flask server (default: 5000)')
+    
+    args = parser.parse_args()
+    
+    # Run tests
+    if args.test:
+        print("🧪 Running system tests...")
+        run_tests()
+        return
+    
+    # Launch GUI
+    if args.gui:
+        print("🖥️ Launching GUI application...")
+        launch_gui()
+        return
+    
+    # Import detection module
     try:
-        server = smtplib.SMTP('smtp.gmail.com', 587)
-        server.starttls()
-        server.login(SENDER_EMAIL, PASSWORD)
-        server.send_message(msg)
-        server.quit()
-        print("Email sent successfully!")
-    except Exception as e:
-        print(f"Error sending email: {e}")
-
-def get_weather(lat, lon):
-    params = {
-        'lat': lat,
-        'lon': lon,
-        'appid': WEATHER_API_KEY,
-        'units': 'metric'
-    }
-    response = requests.get(WEATHER_URL, params=params)
-    weather_data = response.json()
-
-    if response.status_code == 200:
-        weather_description = weather_data['weather'][0]['description']
-        temperature = weather_data['main']['temp']
-        return weather_description, temperature
-    else:
-        return "Unknown", 0
-
-def estimate_severity(collision_count, max_speed, weather_condition):
-    if collision_count > 5 or max_speed > SPEED_THRESHOLD * 1.5 or "rain" in weather_condition or "fog" in weather_condition:
-        return "HIGH SEVERITY: Immediate emergency response required"
-    elif collision_count > 3 or max_speed > SPEED_THRESHOLD:
-        return "MEDIUM SEVERITY: Urgent medical attention recommended"
-    else:
-        return "LOW SEVERITY: Standard medical check recommended"
-
-def detect_accident(video_path):
-    cap = cv2.VideoCapture(video_path)
-    accident_detected = False
-    frame_counter = 0
-    collision_count = 0
-    max_speed = 0
-    last_boxes = []
-    prolonged_collision_count = 0
-    images_to_attach = []
-    video_clip_start_frame = None
-    video_clip_end_frame = None
-    email_sent = False
-    vehicle_events = []
-
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            break
-
-        speed, acceleration, braking = get_vehicle_data()
-        current_vehicle_events = detect_vehicle_events(speed, acceleration, braking)
-        vehicle_events.extend(current_vehicle_events)
-
-        current_time = time.time()
-        results = model(frame)
-        boxes = results[0].boxes.xyxy.cpu().numpy()
-
-        for i, box in enumerate(boxes):
-            if len(box) >= 4:
-                x1, y1, x2, y2 = box[:4]
-                conf = box[4] if len(box) > 4 else None
-                cls = int(box[5]) if len(box) > 5 else None
-
-                label = f'Class {cls}: {conf:.2f}' if conf is not None else 'Unknown'
-                color = (0, 255, 0)
-                if accident_detected:
-                    color = (0, 0, 255)
-
-                cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), color, 2)
-                cv2.putText(frame, label, (int(x1), int(y1) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
-
-                if len(last_boxes) > i:
-                    speed = calculate_speed(last_boxes[i], box[:4], 1)
-                    max_speed = max(max_speed, speed)
-                    cv2.putText(frame, f'Speed: {speed:.2f} px/s', (int(x1), int(y1) + 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 2)
-
-        collision_detected = False
-
-        for i in range(len(boxes)):
-            for j in range(i + 1, len(boxes)):
-                box1 = boxes[i][:4]
-                box2 = boxes[j][:4]
-
-                iou = calculate_iou(box1, box2)
-                if iou > 0.2:
-                    collision_detected = True
-                    collision_count += 1
-
-                    if prolonged_collision_count < PROLONGED_COLLISION_FRAMES:
-                        prolonged_collision_count += 1
-                    if prolonged_collision_count >= PROLONGED_COLLISION_FRAMES:
-                        accident_detected = True
-
-        if accident_detected:
-            last_boxes = boxes
-            for box in boxes:
-                x1, y1, x2, y2 = box[:4]
-                cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), (0, 0, 255), 2)
-
-            cv2.putText(frame, "Accident Detected!", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-
-            if video_clip_start_frame is None:
-                video_clip_start_frame = frame_counter
-            video_clip_end_frame = frame_counter
-
-            weather_condition, temperature = get_weather(ACCIDENT_LOCATION[0], ACCIDENT_LOCATION[1])
-
-            nearest_police_station, nearest_hospital = alert_nearest_services(ACCIDENT_LOCATION)
-
-            frame_filename = f'uploads/frame_{frame_counter}.jpg'
-            cv2.imwrite(frame_filename, frame)
-            images_to_attach.append(frame_filename)
-
-            if not email_sent and len(images_to_attach) >= 1:
-                segment_video_path = crop_accident_video(video_path, video_clip_start_frame, video_clip_end_frame)
-                
-                # Generate comprehensive report
-                accident_report = generate_accident_report(
-                    collision_count, 
-                    max_speed, 
-                    weather_condition, 
-                    temperature, 
-                    list(set(vehicle_events)), 
-                    nearest_police_station, 
-                    nearest_hospital
-                )
-
-                send_email('Accident Detection System - Critical Report', 
-                           accident_report, 
-                           images_to_attach, 
-                           segment_video_path)
-                
-                email_sent = True
+        from detection import AccidentDetector, app, FLASK_HOST
+        import cv2
+    except ImportError as e:
+        print(f"❌ Import error: {e}")
+        print("Please ensure all dependencies are installed: pip install -r requirements.txt")
+        sys.exit(1)
+    
+    # Initialize detector
+    detector = AccidentDetector()
+    
+    # Start API server
+    if args.api:
+        print(f"🌐 Starting Flask API server on {FLASK_HOST}:{args.port}")
+        print(f"   Access at: http://127.0.0.1:{args.port}/")
+        print("\nAPI Endpoints:")
+        print("   GET  /           - API info")
+        print("   GET  /health     - Health check")
+        print("   POST /detect     - Upload video for processing")
+        print("   GET  /accidents  - List detected accidents")
+        print("   GET  /stream     - Live video stream (webcam)")
+        print("\nPress CTRL+C to stop the server.")
+        app.run(host=FLASK_HOST, port=args.port, debug=args.debug)
+    
+    # Process video file
+    elif args.video:
+        if os.path.exists(args.video):
+            print(f"📹 Processing video: {args.video}")
+            accidents = detector.process_video(args.video, display=True, save_output=True)
+            print(f"\n✅ Processing complete!")
+            print(f"   Accidents detected: {len(accidents)}")
+            for i, acc in enumerate(accidents, 1):
+                print(f"   {i}. {acc['severity']} severity at frame {acc['frame_number']}")
+        else:
+            print(f"❌ Video file not found: {args.video}")
+            sys.exit(1)
+    
+    # Live camera detection
+    elif args.camera is not None:
+        print(f"📹 Starting live detection from camera {args.camera}")
+        print("Press ESC to exit.")
+        
+        cap = cv2.VideoCapture(args.camera)
+        if not cap.isOpened():
+            print(f"❌ Could not open camera {args.camera}")
+            sys.exit(1)
+        
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret:
                 break
+            
+            annotated_frame, accident_data = detector.process_frame(frame)
+            
+            if accident_data:
+                detector.handle_accident(accident_data, annotated_frame)
+            
+            cv2.imshow("AI Accident Detection - Live", annotated_frame)
+            
+            if cv2.waitKey(1) & 0xFF == 27:
+                break
+        
+        cap.release()
+        cv2.destroyAllWindows()
+    
+    # Default: Start API server
+    else:
+        print("No specific mode selected. Starting Flask API server...")
+        print(f"🌐 Server running on http://127.0.0.1:{args.port}/")
+        app.run(host="0.0.0.0", port=args.port, debug=args.debug)
 
-        last_boxes = boxes
-        frame_counter += 1
-        cv2.imshow("Accident Detection", frame)
 
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+def run_tests():
+    """Run system tests"""
+    print("=" * 50)
+    
+    tests_passed = 0
+    tests_failed = 0
+    
+    # Test 1: Import modules
+    print("\n[Test 1] Importing modules...")
+    try:
+        from detection import AccidentDetector, calculate_iou
+        from alert import AlertSystem
+        from OSM import EmergencyServicesLocator, haversine_distance
+        print("   ✅ All modules imported successfully")
+        tests_passed += 1
+    except ImportError as e:
+        print(f"   ❌ Import failed: {e}")
+        tests_failed += 1
+    
+    # Test 2: IoU calculation
+    print("\n[Test 2] IoU calculation...")
+    try:
+        from detection import calculate_iou
+        box1 = [0, 0, 100, 100]
+        box2 = [50, 50, 150, 150]
+        iou = calculate_iou(box1, box2)
+        expected = 2500 / (10000 + 10000 - 2500)  # ~0.143
+        if abs(iou - expected) < 0.01:
+            print(f"   ✅ IoU calculation correct: {iou:.3f}")
+            tests_passed += 1
+        else:
+            print(f"   ❌ IoU calculation wrong: {iou:.3f} (expected ~{expected:.3f})")
+            tests_failed += 1
+    except Exception as e:
+        print(f"   ❌ Test failed: {e}")
+        tests_failed += 1
+    
+    # Test 3: Haversine distance
+    print("\n[Test 3] Haversine distance calculation...")
+    try:
+        from OSM import haversine_distance
+        # Chennai to Bangalore (~290 km)
+        dist = haversine_distance(13.0827, 80.2707, 12.9716, 77.5946)
+        if 280 < dist < 300:
+            print(f"   ✅ Distance calculation correct: {dist:.1f} km")
+            tests_passed += 1
+        else:
+            print(f"   ❌ Distance calculation wrong: {dist:.1f} km (expected ~290 km)")
+            tests_failed += 1
+    except Exception as e:
+        print(f"   ❌ Test failed: {e}")
+        tests_failed += 1
+    
+    # Test 4: Model file exists
+    print("\n[Test 4] YOLO model file...")
+    if os.path.exists("models/yolov8n.pt"):
+        print("   ✅ Model file exists")
+        tests_passed += 1
+    else:
+        print("   ⚠️ Model file not found (will be downloaded on first run)")
+        tests_passed += 1  # Still pass as it will auto-download
+    
+    # Test 5: Config file
+    print("\n[Test 5] Configuration file...")
+    if os.path.exists("config.py"):
+        print("   ✅ Config file exists")
+        tests_passed += 1
+    else:
+        print("   ❌ Config file not found (create from config.py)")
+        tests_failed += 1
+    
+    # Summary
+    print("\n" + "=" * 50)
+    print(f"Tests passed: {tests_passed}")
+    print(f"Tests failed: {tests_failed}")
+    print("=" * 50)
+    
+    return tests_failed == 0
 
-    cap.release()
-    cv2.destroyAllWindows()
 
-    for image in images_to_attach:
-        os.remove(image)
+def launch_gui():
+    """Launch the GUI application"""
+    try:
+        from haversine_gui import HaversineGUI
+        import tkinter as tk
+        
+        root = tk.Tk()
+        app = HaversineGUI(root)
+        root.mainloop()
+    except ImportError as e:
+        print(f"❌ GUI launch failed: {e}")
+        print("Make sure tkinter is installed.")
 
-def crop_accident_video(video_path, start_frame, end_frame):
-    input_video = cv2.VideoCapture(video_path)
-    fps = input_video.get(cv2.CAP_PROP_FPS)
-    frame_width = int(input_video.get(cv2.CAP_PROP_FRAME_WIDTH))
-    frame_height = int(input_video.get(cv2.CAP_PROP_FRAME_HEIGHT))
-
-    output_video_path = 'uploads/accident_segment.mp4'
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out = cv2.VideoWriter(output_video_path, fourcc, fps, (frame_width, frame_height))
-
-    input_video.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
-
-    for frame_counter in range(start_frame, end_frame + 1):
-        ret, frame = input_video.read()
-        if not ret:
-            break
-        out.write(frame)
-
-    input_video.release()
-    out.release()
-    return output_video_path
-
-@app.route('/detect', methods=['POST'])
-def detect_route():
-    video_file = request.files['video']
-    video_path = f'uploads/{video_file.filename}'
-    video_file.save(video_path)
-    detect_accident(video_path)
-    return "Detection completed."
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    main()

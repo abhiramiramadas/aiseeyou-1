@@ -1,0 +1,236 @@
+2026-03-20 11:18:25,633 - INFO - 🧠 System Memory: 5.5GB | Model: yolov8n.pt
+2026-03-20 11:18:27,565 - INFO - Accident Detector initialized with models/yolov8n.pt
+2026-03-20 11:18:27,583 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.2:5000
+2026-03-20 11:18:27,583 - INFO - [33mPress CTRL+C to quit[0m
+2026-03-20 11:18:57,138 - ERROR - Exception on / [GET]
+Traceback (most recent call last):
+  File "C:\Users\gopik\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "C:\Users\gopik\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "C:\Users\gopik\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\gopik\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "C:\Users\gopik\Accident\Accident-Detection\detection.py", line 805, in home
+    return render_template('dashboard.html')
+  File "C:\Users\gopik\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\templating.py", line 149, in render_template
+    template = app.jinja_env.get_or_select_template(template_name_or_list)
+  File "C:\Users\gopik\AppData\Local\Programs\Python\Python310\lib\site-packages\jinja2\environment.py", line 1087, in get_or_select_template
+    return self.get_template(template_name_or_list, parent, globals)
+  File "C:\Users\gopik\AppData\Local\Programs\Python\Python310\lib\site-packages\jinja2\environment.py", line 1016, in get_template
+    return self._load_template(name, globals)
+  File "C:\Users\gopik\AppData\Local\Programs\Python\Python310\lib\site-packages\jinja2\environment.py", line 975, in _load_template
+    template = self.loader.load(self, name, self.make_globals(globals))
+  File "C:\Users\gopik\AppData\Local\Programs\Python\Python310\lib\site-packages\jinja2\loaders.py", line 126, in load
+    source, filename, uptodate = self.get_source(environment, name)
+  File "C:\Users\gopik\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\templating.py", line 65, in get_source
+    return self._get_source_fast(environment, template)
+  File "C:\Users\gopik\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\templating.py", line 99, in _get_source_fast
+    raise TemplateNotFound(template)
+jinja2.exceptions.TemplateNotFound: dashboard.html
+2026-03-20 11:18:57,154 - INFO - 192.168.1.2 - - [20/Mar/2026 11:18:57] "[35m[1mGET / HTTP/1.1[0m" 500 -
+2026-03-20 11:18:57,194 - INFO - 192.168.1.2 - - [20/Mar/2026 11:18:57] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-03-20 11:20:07,824 - INFO - 🧠 System Memory: 4.7GB | Model: yolov8s.pt
+2026-03-20 11:20:07,909 - INFO - Accident Detector initialized with models/yolov8n.pt
+2026-03-20 11:20:07,916 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.2:5000
+2026-03-20 11:20:07,916 - INFO - [33mPress CTRL+C to quit[0m
+2026-03-20 11:20:33,147 - ERROR - Exception on / [GET]
+Traceback (most recent call last):
+  File "C:\Users\gopik\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "C:\Users\gopik\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "C:\Users\gopik\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\gopik\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "C:\Users\gopik\Accident\Accident-Detection\detection.py", line 805, in home
+    return render_template('dashboard.html')
+  File "C:\Users\gopik\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\templating.py", line 149, in render_template
+    template = app.jinja_env.get_or_select_template(template_name_or_list)
+  File "C:\Users\gopik\AppData\Local\Programs\Python\Python310\lib\site-packages\jinja2\environment.py", line 1087, in get_or_select_template
+    return self.get_template(template_name_or_list, parent, globals)
+  File "C:\Users\gopik\AppData\Local\Programs\Python\Python310\lib\site-packages\jinja2\environment.py", line 1016, in get_template
+    return self._load_template(name, globals)
+  File "C:\Users\gopik\AppData\Local\Programs\Python\Python310\lib\site-packages\jinja2\environment.py", line 975, in _load_template
+    template = self.loader.load(self, name, self.make_globals(globals))
+  File "C:\Users\gopik\AppData\Local\Programs\Python\Python310\lib\site-packages\jinja2\loaders.py", line 126, in load
+    source, filename, uptodate = self.get_source(environment, name)
+  File "C:\Users\gopik\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\templating.py", line 65, in get_source
+    return self._get_source_fast(environment, template)
+  File "C:\Users\gopik\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\templating.py", line 99, in _get_source_fast
+    raise TemplateNotFound(template)
+jinja2.exceptions.TemplateNotFound: dashboard.html
+2026-03-20 11:20:33,179 - INFO - 192.168.1.2 - - [20/Mar/2026 11:20:33] "[35m[1mGET / HTTP/1.1[0m" 500 -
+2026-03-20 11:20:33,415 - INFO - 192.168.1.2 - - [20/Mar/2026 11:20:33] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-03-20 11:21:51,646 - INFO - 🧠 System Memory: 4.3GB | Model: yolov8s.pt
+2026-03-20 11:21:51,727 - INFO - Accident Detector initialized with models/yolov8n.pt
+2026-03-20 11:21:51,744 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.2:5000
+2026-03-20 11:21:51,744 - INFO - [33mPress CTRL+C to quit[0m
+2026-03-20 12:08:36,964 - INFO - 🧠 System Memory: 4.3GB | Model: yolov8s.pt
+2026-03-20 12:08:37,036 - INFO - Accident Detector initialized with models/yolov8n.pt
+2026-03-20 12:08:37,049 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.2:5000
+2026-03-20 12:08:37,050 - INFO - [33mPress CTRL+C to quit[0m
+2026-03-20 12:09:32,793 - INFO - 🧠 System Memory: 3.9GB | Model: yolov8n.pt
+2026-03-20 12:09:32,831 - INFO - Accident Detector initialized with models/yolov8n.pt
+2026-03-20 12:09:52,303 - INFO - 🧠 System Memory: 3.5GB | Model: yolov8n.pt
+2026-03-20 12:09:52,377 - INFO - Accident Detector initialized with models/yolov8n.pt
+2026-03-20 12:10:25,203 - INFO - 🧠 System Memory: 3.1GB | Model: yolov8n.pt
+2026-03-20 12:10:25,280 - INFO - Accident Detector initialized with models/yolov8n.pt
+2026-03-20 12:10:25,280 - INFO - 🌐 Starting Flask API server on 0.0.0.0:5000
+2026-03-20 12:10:25,402 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.2:5000
+2026-03-20 12:10:25,414 - INFO - [33mPress CTRL+C to quit[0m
+2026-03-20 12:10:25,417 - INFO -  * Restarting with stat
+2026-03-20 12:10:31,596 - INFO - 🧠 System Memory: 2.8GB | Model: yolov8n.pt
+2026-03-20 12:10:31,655 - INFO - Accident Detector initialized with models/yolov8n.pt
+2026-03-20 12:10:31,655 - INFO - 🌐 Starting Flask API server on 0.0.0.0:5000
+2026-03-20 12:10:31,668 - WARNING -  * Debugger is active!
+2026-03-20 12:10:31,673 - INFO -  * Debugger PIN: 255-753-082
+2026-03-20 12:10:39,297 - INFO - 🧠 System Memory: 2.4GB | Model: yolov8n.pt
+2026-03-20 12:10:39,420 - INFO - Accident Detector initialized with models/yolov8n.pt
+2026-03-20 21:52:34,596 - INFO -  * Detected change in 'C:\\Users\\gopik\\Accident\\Accident-Detection\\OSM.py', reloading
+2026-03-20 21:55:25,870 - INFO - 🧠 System Memory: 2.4GB | Model: yolov8n.pt
+2026-03-20 21:55:25,872 - INFO - 🧠 System Memory: 2.4GB | Model: yolov8n.pt
+2026-03-20 21:55:25,949 - INFO - Accident Detector initialized with models/yolov8n.pt
+2026-03-20 21:55:25,949 - INFO - Accident Detector initialized with models/yolov8n.pt
+2026-03-20 21:55:31,607 - INFO - 🧠 System Memory: 2.5GB | Model: yolov8n.pt
+2026-03-20 21:55:31,686 - INFO - Accident Detector initialized with models/yolov8n.pt
+2026-03-21 17:59:50,881 - INFO - 🧠 System Memory: 4.5GB | Model: yolov8s.pt
+2026-03-21 17:59:51,031 - INFO - Accident Detector initialized with models/yolov8n.pt
+2026-03-21 18:05:46,960 - INFO - 🧠 System Memory: 5.2GB | Model: yolov8s.pt
+2026-03-21 18:05:47,001 - INFO - Accident Detector initialized with models/yolov8n.pt
+2026-03-21 18:08:19,509 - INFO - 🧠 System Memory: 5.5GB | Model: yolov8s.pt
+2026-03-21 18:08:19,544 - INFO - Accident Detector initialized with models/yolov8n.pt
+2026-03-21 18:09:14,219 - INFO - 🧠 System Memory: 5.3GB | Model: yolov8s.pt
+2026-03-21 18:09:14,278 - INFO - Accident Detector initialized with models/yolov8n.pt
+2026-03-21 18:12:31,684 - INFO - 🧠 System Memory: 5.9GB | Model: yolov8s.pt
+2026-03-21 18:12:31,742 - INFO - Accident Detector initialized with models/yolov8n.pt
+2026-03-21 18:22:06,659 - INFO - 🧠 System Memory: 5.9GB | Model: yolov8s.pt
+2026-03-21 18:22:06,722 - INFO - Accident Detector initialized with models/yolov8n.pt
+2026-03-21 18:28:37,065 - INFO - 🧠 System Memory: 5.5GB | Model: yolov8s.pt
+2026-03-21 18:28:37,140 - INFO - Accident Detector initialized with models/yolov8n.pt
+2026-03-21 18:38:07,195 - INFO - 🧠 System Memory: 5.0GB | Model: yolov8s.pt
+2026-03-21 18:38:07,598 - INFO - Accident Detector initialized with models/yolov8n.pt
+2026-03-21 18:40:28,516 - INFO - 🧠 System Memory: 5.5GB | Model: yolov8n.pt
+2026-03-21 18:40:28,646 - INFO - Accident Detector initialized with models/yolov8n.pt
+2026-03-21 18:40:55,816 - INFO - 🧠 System Memory: 5.6GB | Model: yolov8n.pt
+2026-03-21 18:40:55,927 - INFO - Accident Detector initialized with models/yolov8n.pt
+2026-03-21 18:50:21,031 - INFO - 🧠 System Memory: 5.2GB | Model: yolov8n.pt
+2026-03-21 18:50:21,152 - INFO - Accident Detector initialized with models/yolov8n.pt
+2026-03-21 19:20:54,974 - INFO - 🧠 System Memory: 5.7GB | Model: yolov8n.pt
+2026-03-21 19:20:55,049 - INFO - Accident Detector initialized with models/yolov8n.pt
+2026-03-21 19:29:42,084 - INFO - 🧠 System Memory: 5.6GB | Model: yolov8n.pt
+2026-03-21 19:29:42,175 - INFO - Accident Detector initialized with models/yolov8n.pt
+2026-03-21 19:29:42,220 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.3:5000
+2026-03-21 19:29:42,220 - INFO - [33mPress CTRL+C to quit[0m
+2026-03-21 19:30:00,292 - ERROR - Exception on / [GET]
+Traceback (most recent call last):
+  File "C:\Users\gopik\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "C:\Users\gopik\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "C:\Users\gopik\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\gopik\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "c:\Users\gopik\Accident\Accident-Detection\detection.py", line 806, in home
+    return render_template('dashboard.html')
+  File "C:\Users\gopik\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\templating.py", line 149, in render_template
+    template = app.jinja_env.get_or_select_template(template_name_or_list)
+  File "C:\Users\gopik\AppData\Local\Programs\Python\Python310\lib\site-packages\jinja2\environment.py", line 1087, in get_or_select_template
+    return self.get_template(template_name_or_list, parent, globals)
+  File "C:\Users\gopik\AppData\Local\Programs\Python\Python310\lib\site-packages\jinja2\environment.py", line 1016, in get_template
+    return self._load_template(name, globals)
+  File "C:\Users\gopik\AppData\Local\Programs\Python\Python310\lib\site-packages\jinja2\environment.py", line 975, in _load_template
+    template = self.loader.load(self, name, self.make_globals(globals))
+  File "C:\Users\gopik\AppData\Local\Programs\Python\Python310\lib\site-packages\jinja2\loaders.py", line 126, in load
+    source, filename, uptodate = self.get_source(environment, name)
+  File "C:\Users\gopik\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\templating.py", line 65, in get_source
+    return self._get_source_fast(environment, template)
+  File "C:\Users\gopik\AppData\Local\Programs\Python\Python310\lib\site-packages\flask\templating.py", line 99, in _get_source_fast
+    raise TemplateNotFound(template)
+jinja2.exceptions.TemplateNotFound: dashboard.html
+2026-03-21 19:30:00,297 - INFO - 127.0.0.1 - - [21/Mar/2026 19:30:00] "[35m[1mGET / HTTP/1.1[0m" 500 -
+2026-03-21 19:30:00,362 - INFO - 127.0.0.1 - - [21/Mar/2026 19:30:00] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-03-21 19:30:19,196 - INFO - 🧠 System Memory: 5.4GB | Model: yolov8n.pt
+2026-03-21 19:30:19,261 - INFO - Accident Detector initialized with models/yolov8n.pt
+2026-03-21 19:38:39,712 - INFO - 🧠 System Memory: 4.8GB | Model: yolov8n.pt
+2026-03-21 19:38:39,744 - INFO - Accident Detector initialized with models/yolov8n.pt
+2026-03-21 19:38:39,745 - INFO - 🌐 Starting Flask API server on 0.0.0.0:5000
+2026-03-21 19:38:39,747 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.3:5000
+2026-03-21 19:38:39,747 - INFO - [33mPress CTRL+C to quit[0m
+2026-03-21 19:38:58,208 - INFO - 🧠 System Memory: 4.7GB | Model: yolov8n.pt
+2026-03-21 19:38:58,242 - INFO - Accident Detector initialized with models/yolov8n.pt
+2026-03-21 20:08:22,084 - INFO - 🧠 System Memory: 5.0GB | Model: yolov8n.pt
+2026-03-21 20:08:22,133 - INFO - Accident Detector initialized with models/yolov8n.pt
+2026-03-21 20:13:04,985 - INFO - 🧠 System Memory: 5.1GB | Model: yolov8n.pt
+2026-03-21 20:13:05,061 - INFO - Accident Detector initialized with models/yolov8n.pt
+2026-03-21 20:13:50,378 - INFO - Accident frame saved: uploads\accident_20260321_201350.jpg
+2026-03-21 20:14:02,636 - INFO - Accident frame saved: uploads\accident_20260321_201402.jpg
+2026-03-21 20:14:12,390 - INFO - Accident #1 recorded: HIGH
+2026-03-21 20:14:18,704 - INFO - Accident #2 recorded: HIGH
+2026-03-21 20:14:21,967 - INFO - ✅ All alerts sent successfully
+2026-03-21 20:14:27,906 - INFO - ✅ All alerts sent successfully
+2026-03-21 20:14:39,776 - INFO - Accident frame saved: uploads\accident_20260321_201439.jpg
+2026-03-21 20:14:50,367 - INFO - Accident #3 recorded: HIGH
+2026-03-21 20:14:52,051 - INFO - Accident frame saved: uploads\accident_20260321_201452.jpg
+2026-03-21 20:14:59,307 - INFO - ✅ All alerts sent successfully
+2026-03-21 20:15:13,922 - INFO - Accident #4 recorded: HIGH
+2026-03-21 20:15:22,631 - INFO - ✅ All alerts sent successfully
+2026-03-21 20:15:29,013 - INFO - Accident frame saved: uploads\accident_20260321_201528.jpg
+2026-03-21 20:15:41,090 - INFO - Accident frame saved: uploads\accident_20260321_201541.jpg
+2026-03-21 20:15:43,485 - INFO - Accident #5 recorded: HIGH
+2026-03-21 20:15:52,655 - INFO - ✅ All alerts sent successfully
+2026-03-21 20:15:55,576 - INFO - Accident #6 recorded: HIGH
+2026-03-21 20:16:04,624 - INFO - ✅ All alerts sent successfully
+2026-03-21 20:16:18,851 - INFO - Accident frame saved: uploads\accident_20260321_201618.jpg
+2026-03-21 20:18:13,017 - INFO - 🧠 System Memory: 5.3GB | Model: yolov8n.pt
+2026-03-21 20:18:13,101 - INFO - Accident Detector initialized with models/yolov8n.pt
+2026-03-21 20:20:10,380 - INFO - Accident frame saved: uploads\accident_20260321_202010.jpg
+2026-03-21 20:20:20,018 - INFO - Accident #1 recorded: HIGH
+2026-03-21 20:20:23,057 - INFO - Accident frame saved: uploads\accident_20260321_202022.jpg
+2026-03-21 20:20:29,275 - INFO - ✅ All alerts sent successfully
+2026-03-21 20:20:40,770 - INFO - Accident #2 recorded: HIGH
+2026-03-21 20:20:49,860 - INFO - ✅ All alerts sent successfully
+2026-03-21 20:21:16,668 - INFO - Accident frame saved: uploads\accident_20260321_202116.jpg
+2026-03-21 20:21:29,408 - INFO - Accident frame saved: uploads\accident_20260321_202129.jpg
+2026-03-21 20:21:33,536 - INFO - Accident #3 recorded: HIGH
+2026-03-21 20:21:42,592 - INFO - ✅ All alerts sent successfully
+2026-03-21 20:21:50,559 - INFO - Accident #4 recorded: HIGH
+2026-03-21 20:22:00,103 - INFO - ✅ All alerts sent successfully
+2026-03-21 20:42:51,396 - INFO - 🧠 System Memory: 4.7GB | Model: yolov8n.pt
+2026-03-21 20:42:51,478 - INFO - Accident Detector initialized with models/yolov8n.pt
+2026-03-21 20:43:29,181 - INFO - Accident frame saved: uploads\accident_20260321_204329.jpg
+2026-03-21 20:43:51,715 - INFO - Accident #1 recorded: HIGH
+2026-03-21 20:44:01,378 - INFO - ✅ All alerts sent successfully
+2026-03-21 20:44:05,659 - INFO - Accident frame saved: uploads\accident_20260321_204405.jpg
+2026-03-21 20:44:24,015 - INFO - Accident #2 recorded: HIGH
+2026-03-21 20:44:33,706 - INFO - ✅ All alerts sent successfully
+2026-03-21 20:45:15,824 - INFO - Accident frame saved: uploads\accident_20260321_204515.jpg
+2026-03-21 20:45:30,492 - INFO - Accident #3 recorded: MEDIUM
+2026-03-21 20:45:33,125 - INFO - Accident frame saved: uploads\accident_20260321_204533.jpg
+2026-03-21 20:45:35,550 - INFO - ✅ All alerts sent successfully
+2026-03-21 20:45:57,746 - INFO - Accident #4 recorded: MEDIUM
+2026-03-21 20:46:03,032 - INFO - ✅ All alerts sent successfully

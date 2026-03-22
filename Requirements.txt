@@ -1,7 +1,6 @@
 opencv-python
 numpy
 torch
-smtplib
 ultralytics
 flask
 pillow
