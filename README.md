@@ -1,205 +1,222 @@
-# 🚗 AI-Based Real-Time Accident Detection With Smart Emergency Response System 🚨  
-An advanced **YOLO-based accident detection system** that identifies collisions in real-time, estimates severity, and alerts emergency services using **AI, OpenCV, Flask, and email automation**.  
+# 🚗 AI See You — Real-Time Accident Detection & Emergency Response
+
+> **Every Second Counts, AI Makes It Faster**
+
+A Python system that watches live video, detects vehicle collisions using YOLO, scores their severity, locates the nearest hospital and police station via OpenStreetMap, and fires off email alerts — all automatically.
 
 ---
 
-## 📖 **Table of Contents**  
-- [🚀 Project Overview](#-project-overview)  
-- [🛠 Features](#-features)  
-- [📂 File Structure](#-file-structure)  
-- [📊 Dataset](#-dataset)  
-- [💾 Installation](#-installation)  
-- [▶️ Running the System](#️-running-the-system)  
-- [🖥 System Architecture](#-system-architecture)  
-- [📝 Results & Simulation](#-results--simulation)  
-- [🔗 References](#-references)  
+## 📁 Repository Structure
+
+```
+aiseeyou/
+├── main.py            # Entry point — CLI with --api / --video / --camera / --gui / --test modes
+├── detection.py       # Core engine: AccidentDetector, VehicleTracker, SeverityCalculator, Flask API
+├── alert.py           # AlertSystem: emergency email, nominee alert, blood donation, insurance claim
+├── OSM.PY             # EmergencyServicesLocator + WeatherService (Overpass API + OpenWeatherMap)
+├── config.py          # All thresholds, model paths, email credentials, GPS defaults
+├── haversine_gui.py   # Tkinter GUI wrapper around Haversine + OSM hospital map
+├── test_mail.py       # Standalone email test harness
+├── uploads/           # Runtime folder — accident frames, clips, PDF reports saved here
+├── Requirements.txt   # Python dependencies
+└── logs.txt           # Runtime log output (UTF-8)
+```
 
 ---
 
-## 🚀 **Project Overview**  
-This AI-powered accident detection system uses **YOLO (You Only Look Once) object detection models** to identify **vehicle collisions in real-time** from video footage. The system then:  
-✅ Calculates the **severity** of the accident using speed, IoU, and collision impact.  
-✅ Retrieves **real-time weather conditions** to assess accident risks.  
-✅ Identifies the **nearest police station & hospital** for emergency response.  
-✅ Sends **emergency alerts** via **email & SMS** with an attached accident report, images, and video clips.  
-✅ Extracts **vehicle number plate using OCR** for insurance and medical processing.  
-✅ Automates **insurance claim submission** based on accident damage assessment.  
-✅ Notifies **insurance policyholder & nominees** about the accident for immediate action.  
-✅ Sends **organ donation alerts** to family members in case of brain death.  
-✅ Sends **blood donation requests** to nominees in case of severe blood loss to save time.  
-✅ Uses **AI-powered damage estimation** to assist in automatic claim processing.  
+## ⚙️ How It Works
 
-> 🔥 **Goal:** To improve emergency response time and reduce accident-related fatalities.
+### 1. Detection (`detection.py`)
 
----
+**`VehicleTracker`** maintains a `defaultdict` of tracks keyed by integer ID. On each frame it matches new detections to existing tracks by nearest centre-point distance (threshold: 100 px, max age: 30 frames), then computes speed as the average pixel-distance over the last 5 frames.
 
-## 🛠 **Features**  
-✅ **Real-Time Accident Detection** - Uses YOLO object detection to monitor collisions.  
-✅ **Severity Estimation** - Calculates accident impact based on speed, IoU (Intersection over Union), and vehicle movement.  
-✅ **Weather Integration** - Fetches live weather data for better accident context.  
-✅ **Automated Emergency Alerts** - Sends **email & SMS notifications** with accident details to emergency contacts.  
-✅ **Location-Based Response** - Uses **OpenStreetMap (OSM)** to find the nearest police station & hospital.  
-✅ **Flask API** - Accepts video input via an API endpoint for real-time processing.  
-✅ **Dynamic Model Selection** - Selects **YOLOv11n, YOLOv11s, or YOLOv11m** based on system memory.  
-✅ **Number Plate Recognition (OCR)** - Extracts vehicle license plates for insurance claim automation.  
-✅ **Insurance Claim Automation** - Automatically submits claims based on accident severity and vehicle damage.  
-✅ **Nominee & Family Alerts** - Notifies insurance policyholder & registered family members in case of an accident.  
-✅ **Organ Donation Alerts** - Sends notifications to family members for potential organ donation in brain death cases.  
-✅ **Blood Donation Requests** - Alerts family members to donate blood in case of severe blood loss.  
-✅ **AI-Based Damage Estimation** - Uses computer vision to assess vehicle damage for insurance processing.  
-✅ **Secure API Communication** - Ensures encrypted data exchange for insurance and medical alerts.  
+**`calculate_iou(boxA, boxB)`** computes Intersection over Union between two `[x1, y1, x2, y2]` bounding boxes with a small epsilon (`1e-6`) to avoid division by zero.
 
+**`SeverityCalculator.calculate(iou, speed1, speed2, vehicle_types)`** produces an impact score (0–100) from three components:
 
----
+| Component | Range | Logic |
+|-----------|-------|-------|
+| IoU score | 0–40 | `min(iou × 80, 40)` |
+| Speed score | 0–40 | 40 / 25 / 15 / 5 based on `SPEED_HIGH/MED/LOW` thresholds |
+| Vehicle type | 0–20 | +10 per heavy vehicle (Truck, Bus), capped at 20 |
 
-## 📂 **File Structure**  
-accident-detection/ │── models/ # YOLO weight files (yolo11n.pt, yolo11s.pt, yolo11m.pt) │── uploads/ # Stores accident frames & videos │── data/ # Dataset (if applicable) │── OSM.py # Retrieves nearest emergency services (police, hospital) │── README.md # Project documentation │── requirements.txt # List of dependencies │── config.py # Stores API keys & settings (Do NOT upload this) │── detection.py # Main accident detection script using YOLO │── alert.py # Handles email alerts & notifications │── haversine_gui.py # GUI for Haversine distance calculation │── main.py  │── testing.mp4 # Test video for accident detection │── testing1.jpg # Sample test image │── testing2.mp4 # Additional test video │── Simulation Video.mp4 # Recorded simulation of system in action │── .gitignore
+A collision is only flagged if `iou > IOU_THRESHOLD_LOW` **and** `max(speed1, speed2) >= MIN_SPEED_FOR_ACCIDENT` — this prevents false positives from parked cars overlapping in the frame.
+
+**`AccidentDetector`** ties everything together:
+- Selects `yolov8n / yolov8s / yolov8m` dynamically based on available RAM (`psutil`)
+- Runs YOLO at confidence `> 0.3` on 5 COCO vehicle classes (Car, Motorcycle, Bus, Truck, Bicycle)
+- On collision: saves frame to `uploads/`, spawns a background thread for all alerts
+- Enforces a 10-second cooldown between alerts for the same scene
+
+**Flask API** (started via `python main.py --api`):
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/` | Web dashboard |
+| GET | `/health` | Model status + feature flags |
+| POST | `/detect` | Upload video, returns JSON accident list |
+| GET | `/accidents` | All accidents detected this session |
+| GET | `/stream` | MJPEG stream from webcam |
+| GET | `/statistics` | Severity breakdown counts |
+| GET | `/export/excel` | Download accidents as `.xlsx` |
+| GET | `/export/map` | Interactive Leaflet map |
 
 ---
 
-## 📊 **Dataset**  
-The accident detection system is trained and tested using:  
+### 2. Emergency Services (`OSM.PY`)
 
-1️⃣ **COCO (Common Objects in Context) Dataset** – Includes various vehicle types in different environments.  
-2️⃣ **Real-Time Accident Videos** – Collected from dashcams, CCTV footage, and accident scenario datasets.  
-3️⃣ **Weather-Adaptive Datasets** – Videos in rain, fog, and low-light conditions to test robustness.  
+**`haversine_distance(lat1, lon1, lat2, lon2)`** — pure Python implementation of the Haversine formula using `math.radians` and `math.atan2`. Returns km.
 
-> 🔗 **Download COCO Dataset:** [COCO Dataset](https://cocodataset.org/#download)
+**`EmergencyServicesLocator`** queries the **Overpass API** (`https://overpass-api.de/api/interpreter`) for hospitals, police stations and fire stations within a configurable radius (default 5 km). It applies two filtering layers before returning results:
+
+- **Exclusion keywords** — strips dental clinics, eye hospitals, vet centres, ayurvedic/homeopathic centres, dialysis units, nursing homes, physiotherapy, blood banks, etc.
+- **Preference scoring** — up-ranks government hospitals, medical colleges, multi-speciality hospitals, and named chains (Apollo, Fortis, Lakeshore, Amrita, KIMS, etc.)
+
+Results are sorted by `distance_km − (preference_score × 0.5)` so a well-known hospital 0.3 km further beats an unknown clinic.
+
+**`WeatherService`** calls **OpenWeatherMap** and computes a risk factor (Low / Medium / High) from precipitation type, visibility, rainfall rate and wind speed. Falls back to a simulated "Clear, 28°C, Low risk" response if no API key is configured.
+
+Default coordinates in `config.py`: **Kochi, Kerala** (`9.9312, 76.2673`).
 
 ---
 
-### **2️⃣ Install Dependencies**  
-Ensure you have **Python 3.x** installed on your system. Then, install the required dependencies using:  
-2️⃣ Install Dependencies
-bash
+### 3. Alert System (`alert.py`)
 
-pip install -r requirements.txt
-For a virtual environment, use:
+**`AlertSystem`** sends emails via `smtplib` over Gmail SMTP (`smtp.gmail.com:587`, STARTTLS). Four distinct email types:
 
-bash
+**Emergency alert** (`send_accident_alert`) — sent to `EMERGENCY_CONTACTS`:
+- Accident location with Google Maps link
+- Severity, IoU, vehicle types, impact score
+- Nearest hospital (name, distance, phone, address) + up to 2 more nearby hospitals
+- Nearest police station
+- Live weather conditions + risk factor
+- Attaches accident frame image and optional video clip
 
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
-3️⃣ Download YOLO Model Files
-Download the YOLO weight files and place them inside the models/ folder.
+**Nominee/family alert** (`send_nominee_alert`) — sent to `NOMINEE_CONTACTS` when severity is HIGH or CRITICAL. Includes the same hospital and police details plus a Google Maps link.
 
-bash
+**Blood donation request** (`send_blood_donation_request`) — triggered only on CRITICAL severity. Asks nominees to go to the nearest hospital immediately.
 
+**Insurance claim** (`send_insurance_claim`) — auto-generates a claim reference (`ACC-YYYYMMDDHHMMSS`), estimates repair cost and days using `DamageEstimator`, and returns the full claim dict as JSON in the email body.
+
+`ENABLE_EMAIL_ALERTS = False` in `config.py` puts the system in simulation mode — it prints what would be sent without actually sending.
+
+---
+
+### 4. Configuration (`config.py`)
+
+All values are read from **environment variables** with sensible defaults, so no secrets need to be hardcoded:
+
+```python
+SENDER_EMAIL   = os.getenv("SENDER_EMAIL", "...")
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "...")   # Gmail App Password
+WEATHER_API_KEY = os.getenv("WEATHER_API_KEY", "")
+
+# IoU thresholds
+IOU_THRESHOLD_LOW    = 0.30   # minimum to flag a collision
+IOU_THRESHOLD_MEDIUM = 0.45
+IOU_THRESHOLD_HIGH   = 0.60
+
+# Speed thresholds (pixels/frame)
+SPEED_LOW  = 15
+SPEED_MED  = 30
+SPEED_HIGH = 50
+MIN_SPEED_FOR_ACCIDENT = 5    # stops parked-car false positives
+
+# YOLO model selection by RAM
+MODEL_PATHS = {
+    "light":  "models/yolov8n.pt",   # < 4 GB
+    "medium": "models/yolov8s.pt",   # 4–8 GB
+    "heavy":  "models/yolov8m.pt",   # > 8 GB
+}
+```
+
+---
+
+## 🚀 Running the System
+
+### Install dependencies
+```bash
+pip install -r Requirements.txt
+```
+
+### Download YOLO weights
+```bash
 mkdir models
-cd models
-wget https://github.com/ultralytics/assets/releases/download/v8/yolov8n.pt
-wget https://github.com/ultralytics/assets/releases/download/v8/yolov8s.pt
-wget https://github.com/ultralytics/assets/releases/download/v8/yolov8m.pt
-cd ..
-4️⃣ Set Up API Keys
-Create a config.py or .env file to store sensitive information:
+# yolov8n.pt will auto-download on first run via ultralytics
+```
 
-python
+### Set credentials
+```bash
+export SENDER_EMAIL="your@gmail.com"
+export EMAIL_PASSWORD="your-app-password"   # Gmail App Password, not your login
+export WEATHER_API_KEY="your-owm-key"       # optional, falls back to simulated weather
+```
 
-SENDER_EMAIL = "your-email@gmail.com"
-EMAIL_PASSWORD = "your-app-password"
-WEATHER_API_KEY = "your-weather-api-key"
-⚠️ Important: Never share your API keys! Always add config.py or .env to .gitignore before pushing to GitHub.
+### Start the Flask API
+```bash
+python main.py --api
+# → http://127.0.0.1:5000/
+```
 
----
+### Process a video file
+```bash
+python main.py --video testing.mp4
+```
 
-## 🚀 **Running the System**  
-### Start the Flask Server  
-Start the Flask Server
+### Live webcam detection
+```bash
+python main.py --camera 0
+# Press ESC to stop
+```
 
-python detection.py
-Flask API will start on:
+### GUI (Haversine map tool)
+```bash
+python main.py --gui
+```
 
-
-http://127.0.0.1:5000/
-Send a Video File for Accident Detection
-
-curl -X POST -F "video=@test-video.mp4" http://127.0.0.1:5000/detect
-Run Tests to Validate Installation
-
-python -m unittest discover tests/
-Check Logs and Debugging
-
-tail -f logs.txt
-Run in Debug Mode
-
-python detection.py --debug
-Stopping the Server
-Use CTRL + C to stop the Flask server. If running in the background, use:
-
-pkill -f detection.py
-Updating the Repository
-If you need to update the repository with the latest changes:
-
-git pull origin main
-✅ Now your system is fully installed and running! 🚀
+### Self-test
+```bash
+python main.py --test
+# Runs: import check, IoU calc, Haversine distance, model file, config file
+```
 
 ---
 
-## 🖥 **System Architecture**  
-1️⃣ **Video Input** → Captures footage from **Dashcam, CCTV, or Uploaded Video** for real-time accident detection.  
-2️⃣ **YOLO Object Detection** → Detects **vehicles, collisions, and accident impact** using AI-powered object detection.  
-3️⃣ **IoU & Speed Calculation** → Measures **collision severity** based on **Intersection over Union (IoU), vehicle speed, and movement**.  
-4️⃣ **Weather Data Retrieval** → Uses **OpenWeatherMap API** to fetch **real-time weather conditions** for accident risk analysis.  
-5️⃣ **Nearest Services** → Finds the closest **police stations, hospitals, and emergency response units** via **OSM API**.  
-6️⃣ **Emergency Alert** → Sends **email & SMS notifications** with accident reports, images, and video evidence to **emergency contacts**.  
-7️⃣ **Number Plate Recognition (OCR)** → Extracts **vehicle license plates** to identify the owner and initiate **insurance claims**.  
-8️⃣ **Insurance Claim Automation** → Automatically submits **accident reports & damage estimates** to the insurance company.  
-9️⃣ **Nominee & Family Alerts** → Notifies **policyholder & registered family members** about the accident for immediate action.  
-🔟 **Medical Emergency Handling** →  
-   - **Organ Donation Alerts** → Notifies family members in case of **brain death** for organ donation.  
-   - **Blood Donation Requests** → Sends alerts to **family members** to donate blood in case of **severe blood loss**.  
+## 🧪 Built-in Tests (`main.py --test`)
+
+| # | Test | Pass condition |
+|---|------|---------------|
+| 1 | Module imports | All 3 core modules import without error |
+| 2 | IoU calculation | `calculate_iou([0,0,100,100], [50,50,150,150])` ≈ 0.143 |
+| 3 | Haversine distance | Chennai → Bangalore = 280–300 km |
+| 4 | YOLO model file | `models/yolov8n.pt` exists (auto-downloads if missing) |
+| 5 | Config file | `config.py` present |
 
 ---
 
-## 📝 **Results & Simulation**  
-📌 The system was tested on multiple accident scenarios, achieving:  
+## 📦 Key Dependencies
 
-- **94.6% Accuracy** in detecting collisions using AI-powered YOLO models.  
-- **92.8% Precision** in identifying accident severity based on speed, IoU, and vehicle movement.  
-- **96.3% OCR Accuracy** in extracting number plates for insurance and medical processing.  
-- **Automated Insurance Claim Processing** within **10 seconds** of accident detection.  
-- **Emergency Notifications:** **Sent to registered contacts & emergency services within 5 seconds**.  
-- **Organ Donation & Blood Request Alerts:** **Dispatched to family members in real-time** for immediate action.  
-- **Average Response Time:** **2.1 seconds** for accident detection and alert initiation.  
-- **Weather & Location-Based Analysis:** **Accident severity adjusted based on real-time weather and nearest medical facilities**.  
+```
+ultralytics     # YOLOv8 model
+opencv-python   # Video capture, frame processing, bounding boxes
+flask           # REST API server
+numpy           # IoU, speed calculations
+psutil          # RAM-based model selection
+requests        # Overpass API + OpenWeatherMap calls
+```
 
-### **📺 Video Demonstration**  
-🎬 Watch the system in action:  
-[Simulation Video](Available in the fIles section)  
+Full list in `Requirements.txt`.
 
 ---
 
-## 🔗 **References**  
-📌 **YOLO Model Documentation**: [Ultralytics YOLO](https://github.com/ultralytics/ultralytics)  
-📌 **COCO Dataset**: [Download Here](https://cocodataset.org/#download)  
-📌 **Flask API Guide**: [Flask Documentation](https://flask.palletsprojects.com/en/2.0.x/)  
-📌 **OpenWeatherMap API**: [Weather API](https://openweathermap.org/api)  
-📌 **OpenStreetMap API**: [Overpass API](https://overpass-api.de/)  
+## 👥 Team
 
----
+| Name | Roll |
+|------|------|
+| Abhirami Ramadas | 02 |
+| Aiswarya Rajeev Nair | 04 |
+| Anola Saju | 11 |
+| Gopika S S | 18 |
 
-## 👨‍💻 **Contributors**  
-🚀 **Pranav Reddy Sanikommu** *(Student,Btech AIE)*  
-🎓 *Amrita Vishwa Vidyapeetham, Chennai, India*  
-
-📢 **Supervised by:**  
-👨‍🏫 **Dr. Bharathi Mohan G** *(Professor, Amrita School of Computing, Chennai)*  
-
-> For any questions, feel free to reach out at: `772003pranav@gmail.com`  
-
----
-
-## 🎯 **Future Improvements**  
-✅ **Enhanced AI-Based Severity Estimation** – Improve accident severity detection by incorporating **vehicle deformation analysis and occupant impact estimation**.  
-✅ **Faster Insurance Claim Processing** – Automate insurance claims further by integrating **direct API communication with insurance providers**.  
-✅ **Better Emergency Response Coordination** – Connect the system with **local ambulance and police dispatch centers** for quicker rescue operations.  
-✅ **Improved OCR Accuracy for Number Plate Recognition** – Enhance **OCR models** to recognize number plates more accurately, even in **low-light and blurred conditions**.  
-✅ **Automated Medical Assistance Alerts** – Notify **nearby hospitals** about accident cases to ensure **faster medical support availability**.  
-✅ **Smart Weather-Based Accident Risk Adjustment** – Dynamically adjust accident severity scores based on **weather conditions like fog, rain, and visibility levels**.  
-✅ **Mobile App Integration** – Develop a companion **mobile app** to allow users to receive **real-time accident notifications and insurance updates**.  
-
-#   a i s e e y o u  
- #   a i s e e y o u  
- 
+**Guided by:** Prof. Seena Thomas &nbsp;|&nbsp; **Coordinator:** Dr. Dileep V K  
+Amrita Vishwa Vidyapeetham
